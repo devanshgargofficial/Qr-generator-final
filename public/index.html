@@ -1,0 +1,1016 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Club QR Code Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg:      #090b11;
+      --surface: #111520;
+      --card:    #161c2d;
+      --border:  #242d46;
+      --accent:  #c9a84c;
+      --text:    #e8e6f0;
+      --muted:   #6b7494;
+      --green:   #3ecf8e;
+      --red:     #e05a5a;
+      --radius:  12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 20px;
+      background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(201,168,76,0.08) 0%, transparent 60%);
+    }
+
+    h1 { text-align: center; font-size: 30px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 40px; }
+
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* ── Config Panel ── */
+    .config-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 32px;
+    }
+    .panel-title {
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
+      color: var(--accent);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"], input[type="url"], select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none;
+      margin-bottom: 4px;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+    input.error {
+      border-color: var(--red) !important;
+      box-shadow: 0 0 0 3px rgba(224,90,90,0.12) !important;
+    }
+    input.success {
+      border-color: var(--green) !important;
+      box-shadow: 0 0 0 3px rgba(62,207,142,0.12) !important;
+    }
+    .field-hint {
+      font-size: 11px;
+      margin-bottom: 14px;
+      height: 16px;
+      padding-left: 2px;
+      transition: color 0.2s;
+    }
+    .field-hint.err { color: var(--red); }
+    .field-hint.ok  { color: var(--green); }
+    .field-hint.info { color: var(--muted); }
+
+    select option { background: var(--card); }
+
+    .url-preview {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      word-break: break-all;
+      margin-bottom: 18px;
+    }
+    .url-preview .label-tiny {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* ── Color Pickers ── */
+    .color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .color-field label { margin-bottom: 6px; }
+    .color-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+    }
+    input[type="color"] {
+      width: 28px; height: 28px;
+      border: none; border-radius: 6px;
+      background: none; cursor: pointer; padding: 0; margin: 0;
+    }
+    .color-hex { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); }
+
+    /* ── Buttons ── */
+    .btn-generate {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #a8762a);
+      color: #000;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.2s;
+      box-shadow: 0 4px 24px rgba(201,168,76,0.25);
+    }
+    .btn-generate:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(201,168,76,0.35); }
+    .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── Add Club Panel ── */
+    .add-club-panel {
+      background: var(--card);
+      border: 1px dashed var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 32px;
+    }
+
+    .clubs-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .club-tag {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+    .club-tag.already-generated { border-color: rgba(62,207,142,0.4); }
+    .club-tag.already-generated::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: var(--radius);
+      background: rgba(62,207,142,0.04);
+      pointer-events: none;
+    }
+    .club-tag .tag-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .club-tag .name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .club-tag .id-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      background: rgba(201,168,76,0.1);
+      padding: 3px 7px;
+      border-radius: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .club-tag .tag-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .club-tag .remove-btn {
+      background: none; border: none;
+      color: var(--muted); cursor: pointer;
+      font-size: 14px; padding: 0 2px;
+      transition: color 0.2s;
+    }
+    .club-tag .remove-btn:hover { color: var(--red); }
+    .generated-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      title: "QR already generated";
+    }
+    .generated-dot.pending { background: var(--border); }
+
+    /* ── Tooltip ── */
+    .tooltip-wrap { position: relative; display: inline-flex; }
+    .tooltip-wrap .tip {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%; transform: translateX(-50%);
+      background: #2a3250;
+      color: var(--text);
+      font-size: 11px;
+      padding: 5px 9px;
+      border-radius: 7px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 10;
+    }
+    .tooltip-wrap:hover .tip { opacity: 1; }
+
+    /* ── Add Row ── */
+    .add-row {
+      display: grid;
+      grid-template-columns: 1fr 160px 60px auto;
+      gap: 10px;
+      align-items: start;
+    }
+    .add-row input { margin-bottom: 0; }
+    .btn-add {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      padding: 0;
+      height: 46px;
+      margin-top: 20px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    .btn-add:hover { background: rgba(201,168,76,0.1); }
+
+    /* ── Generate All Row ── */
+    .generate-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    /* ── QR Grid ── */
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .qr-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      text-align: center;
+      transition: border-color 0.2s;
+      position: relative;
+    }
+    .qr-card:hover { border-color: var(--accent); }
+    .qr-card .saved-badge {
+      position: absolute;
+      top: 14px; right: 14px;
+      background: rgba(62,207,142,0.15);
+      color: var(--green);
+      border: 1px solid rgba(62,207,142,0.3);
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.06em;
+      padding: 3px 9px;
+      border-radius: 20px;
+    }
+    .qr-club-emoji { font-size: 28px; margin-bottom: 10px; }
+    .qr-club-name  { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .qr-club-id    { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 20px; }
+    .qr-canvas-wrap {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      display: inline-block;
+      margin-bottom: 18px;
+    }
+    .qr-url { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); word-break: break-all; margin-bottom: 6px; line-height: 1.4; }
+    .qr-filepath { font-family: 'DM Mono', monospace; font-size: 10px; color: rgba(62,207,142,0.7); word-break: break-all; margin-bottom: 14px; line-height: 1.4; }
+
+    .qr-card-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .btn-download, .btn-regen {
+      border: 1px solid var(--border);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    .btn-download { background: var(--surface); color: var(--text); }
+    .btn-download:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-regen { background: rgba(62,207,142,0.06); color: var(--green); border-color: rgba(62,207,142,0.3); }
+    .btn-regen:hover { background: rgba(62,207,142,0.14); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 28px; right: 28px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 20px;
+      font-size: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+      z-index: 999;
+      max-width: 320px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.toast-ok  { border-color: rgba(62,207,142,0.4); color: var(--green); }
+    #toast.toast-err { border-color: rgba(224,90,90,0.4);  color: var(--red); }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block; vertical-align: middle; margin-right: 6px;
+    }
+
+    .select-club-section {
+    margin: 20px 0;
+}
+
+#clubDropdown {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    background: #161c2d;
+    color: #fff;
+    border: 1px solid #242d46;
+    font-size: 14px;
+}
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .section-gap { margin-bottom: 24px; }
+
+    @media (max-width: 600px) {
+      .color-row { grid-template-columns: 1fr 1fr; }
+      .add-row { grid-template-columns: 1fr 1fr; }
+      .add-row .btn-add { grid-column: span 2; margin-top: 0; }
+      .generate-row { grid-template-columns: 1fr; }
+      .qr-card-btns { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <h1>🎶 Club QR Generator</h1>
+  <div class="subtitle">Generate & save QR codes — backed by MongoDB (nerolifedb)</div>
+
+  <!-- ── Step 1: Configuration ── -->
+  <div class="config-panel">
+    <div class="panel-title">⚙️ Configuration</div>
+
+    <label>Form URL (where your index.html is hosted)</label>
+    <input type="url" id="baseUrl" value="http://localhost:3001" placeholder="https://yoursite.com/form" oninput="updatePreview()" />
+    <div class="field-hint info" id="baseUrlHint">&nbsp;</div>
+
+    <div class="url-preview" id="urlPreview">
+      <div class="label-tiny">Preview URL</div>
+      <span id="previewText">http://localhost:3001/club-id</span>
+    </div>
+
+    <div class="color-row">
+      <div class="color-field">
+        <label>QR Foreground</label>
+        <div class="color-wrap">
+          <input type="color" id="colorFg" value="#000000" oninput="document.getElementById('fgHex').textContent=this.value" />
+          <span class="color-hex" id="fgHex">#000000</span>
+        </div>
+      </div>
+      <div class="color-field">
+        <label>QR Background</label>
+        <div class="color-wrap">
+          <input type="color" id="colorBg" value="#ffffff" oninput="document.getElementById('bgHex').textContent=this.value" />
+          <span class="color-hex" id="bgHex">#ffffff</span>
+        </div>
+      </div>
+      <div class="color-field">
+        <label>QR Size (px)</label>
+        <div class="color-wrap">
+          <input type="text" id="qrSize" value="240" style="background:none;border:none;padding:0;font-size:15px;margin:0;box-shadow:none;" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Step 2: Manage Clubs ── -->
+  <div class="add-club-panel">
+    <div class="panel-title">🏢 Your Clubs <span id="dbSyncStatus" style="font-size:11px;color:var(--muted);margin-left:8px;"></span></div>
+
+    <div class="clubs-list" id="clubsList"></div>
+
+    <div class="add-row">
+      <div>
+        <label>Club Name</label>
+        <input type="text" id="newClubName" placeholder="e.g. Nebula Club" oninput="onNameInput()" />
+        <div class="field-hint info" id="nameHint">&nbsp;</div>
+      </div>
+      <div>
+        <label>Club ID (URL slug)</label>
+        <input type="text" id="newClubId" placeholder="e.g. nebula" oninput="onIdInput()" />
+        <div class="field-hint info" id="idHint">&nbsp;</div>
+      </div>
+      <div>
+        <label>Icon</label>
+        <input type="text" id="newClubEmoji" placeholder="🎵" maxlength="2" style="text-align:center;font-size:20px;" />
+        <div class="field-hint">&nbsp;</div>
+      </div>
+      <div>
+        <button class="btn-add" onclick="addClub()" title="Add Club">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Generate Buttons ── -->
+  <div class="generate-row">
+    <button class="btn-generate" onclick="generateAll()">⚡ Generate QR Codes for All Clubs</button>
+    <button class="btn-generate" onclick="generateSingle()" style="max-width:220px;font-size:13px;background:linear-gradient(135deg,#2a3556,#1a2240);color:var(--text);box-shadow:none;border:1px solid var(--border);">🎯 Generate Single Club</button>
+  </div>
+
+  <!-- ── Select Club & Get QR (new feature) ── -->
+  <div class="config-panel" style="margin-bottom:32px;">
+    <div class="panel-title">🎯 Get QR Code for a Club</div>
+    <label>Select Club</label>
+    <select id="clubDropdown" onmousedown="loadOutletsOnce()" onfocus="loadOutletsOnce()" onchange="onDropdownChange()">
+      <option value="">Click to load outlets...</option>
+    </select>
+    <div class="field-hint info" id="dropdownHint">&nbsp;</div>
+    <button class="btn-generate" id="getQRBtn" onclick="getQRForSelected()" disabled
+      style="margin-top:8px;">
+      Get QR Code
+    </button>
+
+    <!-- QR result panel (hidden until generated) -->
+    <div id="dropdownQRResult" style="display:none;margin-top:28px;text-align:center;">
+      <div id="dropdownQRLabel" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);letter-spacing:.08em;margin-bottom:16px;"></div>
+      <div style="display:inline-block;background:#fff;border-radius:14px;padding:16px;margin-bottom:18px;box-shadow:0 8px 32px rgba(0,0,0,0.35);">
+        <div id="dropdownQRCanvas"></div>
+      </div>
+      <div id="dropdownQRPayload" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);text-align:left;margin-bottom:18px;line-height:1.9;word-break:break-all;"></div>
+      <button class="btn-download" id="dropdownDownloadBtn">⬇ Download QR PNG</button>
+    </div>
+  </div>
+
+  <!-- ── QR Output ── -->
+  <div class="qr-grid" id="qrGrid"></div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  // Same-origin: the admin UI and its API are served by the same server, so an
+  // empty base makes calls relative — works on localhost AND behind ngrok.
+  const API = '';
+
+  // Where the guest "Club Experience" form (the `complete` project) is served.
+  // The QR opens this form, carrying the opaque ?ref=<token>.
+  // Cloudflare quick-tunnel URL — changes each time the tunnel restarts.
+  const FORM_BASE_URL = 'https://recent-hepatitis-boulder-kits.trycloudflare.com';
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  let clubs = [
+    { name: 'Sky Lounge',      id: 'skylounge', emoji: '🌆' },
+    { name: 'Nebula Club',     id: 'nebula',    emoji: '🌌' },
+    { name: 'Onyx Bar',        id: 'onyx',      emoji: '🖤' },
+    { name: 'Matrix Club',     id: 'matrix',    emoji: '💠' },
+    { name: 'Pulse Nightclub', id: 'pulse',     emoji: '🔊' },
+    { name: 'Zara Lounge',     id: 'zara',      emoji: '✨' },
+  ];
+
+  // Set of club IDs that already have QR saved in MongoDB
+  let generatedIds = new Set();
+
+  // ── State: records from DB ──────────────────────────────────────────────────
+  let recordsMap = {};  // keyed by clubId for O(1) lookup on QR generate
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  (async function init() {
+    await loadRecordsAndInit();
+    renderClubList();
+  })();
+
+  // Single fetch for /api/qr-records: populates dropdown + generatedIds cache
+  async function loadRecordsAndInit() {
+    document.getElementById('dbSyncStatus').textContent = 'syncing...';
+    try {
+      const res  = await fetch(`${API}/api/qr-records`);
+      const data = await res.json();
+
+      if (!data.success) throw new Error('API error');
+
+      // Cache every record by clubId
+      data.records.forEach(r => { recordsMap[r.clubId] = r; });
+
+      // Track which clubs already have a saved QR (for green dots)
+      generatedIds = new Set(data.records.map(r => r.clubId));
+      document.getElementById('dbSyncStatus').textContent =
+        data.records.length ? `✓ ${data.records.length} saved in DB` : '0 clubs saved';
+
+      // NOTE: the "Select Club" dropdown is populated separately from /api/outlets
+      // (see loadOutletsOnce), lazily on first open — not from this response.
+    } catch (e) {
+      document.getElementById('dbSyncStatus').textContent = '⚠ DB unreachable';
+    }
+  }
+
+  // ── Outlets: lazy-load into the dropdown on first open ───────────────────────
+  let outletsMap    = {};     // keyed by outlet_id for O(1) lookup on select
+  let outletsLoaded = false;  // guard so we fetch only once
+
+  async function loadOutletsOnce() {
+    if (outletsLoaded) return;
+    outletsLoaded = true;  // set immediately so rapid clicks don't double-fetch
+
+    const dropdown = document.getElementById('clubDropdown');
+    dropdown.innerHTML = '<option value="">Loading outlets...</option>';
+
+    try {
+      const res  = await fetch(`${API}/api/outlets`);
+      const data = await res.json();
+      if (!data.success) throw new Error('API error');
+
+      outletsMap = {};
+      data.outlets.forEach(o => { outletsMap[o.outlet_id] = o; });
+
+      if (!data.outlets.length) {
+        dropdown.innerHTML = '<option value="">No outlets found</option>';
+        return;
+      }
+      dropdown.innerHTML =
+        '<option value="">Select an outlet...</option>' +
+        data.outlets.map(o =>
+          `<option value="${o.outlet_id}">${o.outlet_name} (${o.outlet_id})</option>`
+        ).join('');
+    } catch (e) {
+      outletsLoaded = false;  // allow a retry on next open
+      dropdown.innerHTML = '<option value="">Failed to load outlets</option>';
+    }
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function slugify(str) {
+    return str.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
+  function toast(msg, type = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `show toast-${type}`;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.className = ''; }, 3000);
+  }
+
+  function onDropdownChange() {
+    const val  = document.getElementById('clubDropdown').value;
+    const btn  = document.getElementById('getQRBtn');
+    const hint = document.getElementById('dropdownHint');
+    btn.disabled = !val;
+    hint.textContent = val ? '✓ "' + val + '" selected — click Get QR Code' : ' ';
+    hint.className   = val ? 'field-hint ok' : 'field-hint info';
+    document.getElementById('dropdownQRResult').style.display = 'none';
+    document.getElementById('dropdownQRCanvas').innerHTML = '';
+  }
+
+  async function getQRForSelected() {
+    const outletId = document.getElementById('clubDropdown').value;
+    if (!outletId) { toast('Please select an outlet.', 'err'); return; }
+
+    const outlet = outletsMap[outletId];
+    if (!outlet) { toast('Outlet data not found.', 'err'); return; }
+
+    // Ask the server for a signed token — the outlet id is never put in the URL.
+    let targetUrl;
+    try {
+      const res  = await fetch(`${API}/api/outlets/qr-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outletId: outlet.outlet_id }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Could not create token');
+      // Opaque link → opens the guest Club Experience form (the `complete` project).
+      // Only the signed token travels in the URL.
+      targetUrl = `${FORM_BASE_URL}/?ref=${encodeURIComponent(data.token)}`;
+    } catch (e) {
+      toast('✗ ' + e.message, 'err');
+      return;
+    }
+
+    const record = { emoji: outlet.outlet_icon || '📍', clubName: outlet.outlet_name, clubId: outlet.outlet_id };
+
+    // Clear any previous render
+    const canvasWrap = document.getElementById('dropdownQRCanvas');
+    canvasWrap.innerHTML = '';
+
+    // Encode the opaque form URL — scanning it opens the pre-filled outlet form.
+    new QRCode(canvasWrap, {
+      text:         targetUrl,
+      width:        240,
+      height:       240,
+      colorDark:    '#000000',
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
+    });
+
+    // Label (admin-side reference only — not encoded in the QR)
+    document.getElementById('dropdownQRLabel').textContent =
+      record.emoji + '  ' + record.clubName + '  ·  ' + record.clubId;
+
+    // Preview: only the opaque URL is encoded — no id/name in the link.
+    document.getElementById('dropdownQRPayload').innerHTML =
+      '<span style="color:var(--muted)">// encoded in QR — id &amp; name are NOT in the URL</span>\n' +
+      '<span style="color:var(--accent)">"url"</span>: <span style="color:var(--text)">"' + targetUrl + '"</span>';
+
+    // Wire download to the canvas QRCode.js rendered
+    document.getElementById('dropdownDownloadBtn').onclick = () => {
+      const canvas = canvasWrap.querySelector('canvas');
+      if (!canvas) { toast('QR not ready.', 'err'); return; }
+      const a = document.createElement('a');
+      a.download = 'qr-' + record.clubId + '.png';
+      a.href     = canvas.toDataURL('image/png');
+      a.click();
+    };
+
+    document.getElementById('dropdownQRResult').style.display = 'block';
+    document.getElementById('dropdownQRResult').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    toast('✓ QR for "' + record.clubName + '" ready', 'ok');
+  }
+
+
+  function getConfig() {
+    return {
+      baseUrl: document.getElementById('baseUrl').value.replace(/\/$/, ''),
+      fg:   document.getElementById('colorFg').value,
+      bg:   document.getElementById('colorBg').value,
+      size: parseInt(document.getElementById('qrSize').value) || 240,
+    };
+  }
+
+  // ── Validation ──────────────────────────────────────────────────────────────
+  function onNameInput() {
+    const name = document.getElementById('newClubName').value.trim();
+    const suggestedId = slugify(name);
+    if (name && !document.getElementById('newClubId').value) {
+      document.getElementById('newClubId').value = suggestedId;
+      onIdInput();
+    }
+  }
+  
+
+  function onIdInput() {
+    const raw  = document.getElementById('newClubId').value.trim();
+    const id   = slugify(raw);
+    const hint = document.getElementById('idHint');
+    const inp  = document.getElementById('newClubId');
+
+    if (!raw) {
+      hint.textContent = ''; hint.className = 'field-hint info';
+      inp.className = ''; return;
+    }
+
+    // Auto-fix slug
+    if (raw !== id) {
+      document.getElementById('newClubId').value = id;
+    }
+
+    // Check local list
+    const localDupe = clubs.find(c => c.id === id);
+    if (localDupe) {
+      hint.textContent = `⚠ Club ID "${id}" already exists in your list`;
+      hint.className = 'field-hint err';
+      inp.className = 'error'; return;
+    }
+
+    // Check DB
+    if (generatedIds.has(id)) {
+      hint.textContent = `⚡ QR already generated & saved for "${id}" — generating again will overwrite`;
+      hint.className = 'field-hint ok';
+      inp.className = 'success'; return;
+    }
+
+    hint.textContent = `✓ "${id}" is available`;
+    hint.className = 'field-hint ok';
+    inp.className = 'success';
+  }
+
+  // ── Club Management ──────────────────────────────────────────────────────────
+  function addClub() {
+    const name  = document.getElementById('newClubName').value.trim();
+    const rawId = document.getElementById('newClubId').value.trim();
+    const id    = slugify(rawId || name);
+    const emoji = document.getElementById('newClubEmoji').value.trim() || '🎵';
+
+    if (!name) { toast('Please enter a club name.', 'err'); return; }
+    if (!id)   { toast('Please enter a club ID.',   'err'); return; }
+
+    if (clubs.find(c => c.id === id)) {
+      toast(`Club ID "${id}" already exists in your list.`, 'err'); return;
+    }
+
+    clubs.push({ name, id, emoji });
+    renderClubList();
+    toast(`✓ "${name}" added to list`, 'ok');
+
+    document.getElementById('newClubName').value  = '';
+    document.getElementById('newClubId').value    = '';
+    document.getElementById('newClubEmoji').value = '';
+    document.getElementById('idHint').textContent = '';
+    document.getElementById('idHint').className   = 'field-hint info';
+    document.getElementById('newClubId').className = '';
+  }
+
+  function removeClub(id) {
+    clubs = clubs.filter(c => c.id !== id);
+    renderClubList();
+  }
+
+  function renderClubList() {
+    const list = document.getElementById('clubsList');
+    if (!clubs.length) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:13px;">No clubs added yet.</div>';
+      return;
+    }
+    list.innerHTML = clubs.map(c => {
+      const saved = generatedIds.has(c.id);
+      return `
+        <div class="club-tag ${saved ? 'already-generated' : ''}">
+          <div class="tag-left">
+            <span>${c.emoji}</span>
+            <span class="name" title="${c.name}">${c.name}</span>
+          </div>
+          <div class="tag-actions">
+            <span class="id-badge">${c.id}</span>
+            <div class="tooltip-wrap">
+              <span class="generated-dot ${saved ? '' : 'pending'}"></span>
+              <span class="tip">${saved ? '✓ QR saved in DB' : 'Not yet generated'}</span>
+            </div>
+            <button class="remove-btn" onclick="removeClub('${c.id}')" title="Remove">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updatePreview() {
+    const base = document.getElementById('baseUrl').value.replace(/\/$/, '');
+    document.getElementById('previewText').textContent = `${base}/club-id`;
+  }
+
+  // ── Generate Single (pick one) ───────────────────────────────────────────────
+  function generateSingle() {
+    if (!clubs.length) { toast('No clubs in your list.', 'err'); return; }
+
+    // Build a quick modal/overlay
+    const existing = document.getElementById('pickModal');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pickModal';
+    overlay.style.cssText = `
+      position:fixed;inset:0;background:rgba(0,0,0,0.7);
+      display:flex;align-items:center;justify-content:center;z-index:100;
+    `;
+
+    const box = document.createElement('div');
+    box.style.cssText = `
+      background:#161c2d;border:1px solid #242d46;border-radius:20px;
+      padding:28px;width:380px;max-width:90vw;max-height:80vh;overflow-y:auto;
+    `;
+    box.innerHTML = `
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:#c9a84c;letter-spacing:.14em;text-transform:uppercase;margin-bottom:16px;">
+        🎯 Select Club to Generate
+      </div>
+    `;
+
+    clubs.forEach(c => {
+      const saved = generatedIds.has(c.id);
+      const btn = document.createElement('button');
+      btn.style.cssText = `
+        width:100%;background:${saved ? 'rgba(62,207,142,0.06)' : '#111520'};
+        border:1px solid ${saved ? 'rgba(62,207,142,0.3)' : '#242d46'};
+        border-radius:12px;color:#e8e6f0;
+        font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:500;
+        padding:12px 16px;cursor:pointer;display:flex;align-items:center;
+        justify-content:space-between;margin-bottom:8px;transition:all .15s;
+      `;
+      btn.innerHTML = `
+        <span>${c.emoji} ${c.name}</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:#c9a84c;background:rgba(201,168,76,.1);padding:3px 7px;border-radius:6px;">${c.id}</span>
+          ${saved ? '<span style="font-size:10px;color:#3ecf8e;">✓ saved</span>' : ''}
+        </span>
+      `;
+      btn.onmouseenter = () => btn.style.borderColor = '#c9a84c';
+      btn.onmouseleave = () => btn.style.borderColor = saved ? 'rgba(62,207,142,0.3)' : '#242d46';
+      btn.onclick = () => {
+        overlay.remove();
+        generateForClub(c);
+      };
+      box.appendChild(btn);
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = `
+      width:100%;background:none;border:1px solid #242d46;
+      border-radius:12px;color:#6b7494;
+      font-family:'Space Grotesk',sans-serif;font-size:13px;
+      padding:10px;cursor:pointer;margin-top:4px;
+    `;
+    cancelBtn.onclick = () => overlay.remove();
+    box.appendChild(cancelBtn);
+
+    overlay.appendChild(box);
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+  }
+
+  // ── Core Generation ──────────────────────────────────────────────────────────
+  async function generateForClub(club) {
+    const { baseUrl, fg, bg, size } = getConfig();
+    if (!baseUrl) { toast('Please set a Base URL first.', 'err'); return; }
+
+    const grid = document.getElementById('qrGrid');
+
+    // Build card
+    const card = document.createElement('div');
+    card.className = 'qr-card';
+    card.id = `card-${club.id}`;
+    card.innerHTML = `
+      <div class="qr-club-emoji">${club.emoji}</div>
+      <div class="qr-club-name">${club.name}</div>
+      <div class="qr-club-id">${club.id}</div>
+      <div class="qr-canvas-wrap" id="qr-${club.id}"></div>
+      <div class="qr-url">${baseUrl}/${club.id}</div>
+      <div class="qr-filepath" id="path-${club.id}">saving…</div>
+      <div class="qr-card-btns">
+        <button class="btn-download" onclick="downloadQR('${club.id}','${club.name}')">⬇ Download</button>
+        <button class="btn-regen" onclick="regenQR('${club.id}')">↺ Re-gen</button>
+      </div>
+    `;
+
+    // Remove old card if exists
+    const old = document.getElementById(`card-${club.id}`);
+    if (old) old.remove();
+
+    grid.prepend(card);
+
+    // Render QR in browser
+    new QRCode(document.getElementById(`qr-${club.id}`), {
+      text:         `${baseUrl}/${club.id}`,
+      width:        size,
+      height:       size,
+      colorDark:    fg,
+      colorLight:   bg,
+      correctLevel: QRCode.CorrectLevel.H,
+    });
+
+    // Save to backend
+    try {
+      const res = await fetch(`${API}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clubId:   club.id,
+          clubName: club.name,
+          emoji:    club.emoji,
+          baseUrl, fg, bg, size,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        generatedIds.add(club.id);
+        renderClubList();
+        card.innerHTML += '';
+        // Show saved badge
+        const badge = document.createElement('div');
+        badge.className = 'saved-badge';
+        badge.textContent = '✓ saved to DB';
+        card.appendChild(badge);
+        // Show image path
+        document.getElementById(`path-${club.id}`).textContent =
+          `📁 ${data.record.imagePath}`;
+        toast(`✓ QR for "${club.name}" saved!`, 'ok');
+      } else {
+        toast(`Backend error: ${data.error}`, 'err');
+        document.getElementById(`path-${club.id}`).textContent = '⚠ save failed';
+      }
+    } catch (e) {
+      document.getElementById(`path-${club.id}`).textContent = '⚠ backend unreachable';
+      toast('Could not reach backend.', 'err');
+    }
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  async function generateAll() {
+    if (!clubs.length) { toast('No clubs in your list.', 'err'); return; }
+    const { baseUrl } = getConfig();
+    if (!baseUrl) { toast('Please set a Base URL first.', 'err'); return; }
+
+    const btn = document.querySelector('.btn-generate');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating…';
+
+    document.getElementById('qrGrid').innerHTML = '';
+
+    for (const club of clubs) {
+      await generateForClub(club);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Generate QR Codes for All Clubs';
+    toast(`✓ All ${clubs.length} QR codes generated & saved`, 'ok');
+  }
+
+  // ── Re-generate ───────────────────────────────────────────────────────────────
+  async function regenQR(clubId) {
+    const club = clubs.find(c => c.id === clubId);
+    if (!club) { toast('Club not found.', 'err'); return; }
+    await generateForClub(club);
+  }
+
+  // ── Download ───────────────────────────────────────────────────────────────
+  function downloadQR(clubId, clubName) {
+    const wrap   = document.getElementById(`qr-${clubId}`);
+    const canvas = wrap && wrap.querySelector('canvas');
+    if (!canvas) { toast('Generate QR first!', 'err'); return; }
+
+    const size    = canvas.width;
+    const out     = document.createElement('canvas');
+    const padding = 30, textH = 50;
+    out.width  = size + padding * 2;
+    out.height = size + padding * 2 + textH;
+
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.roundRect(0, 0, out.width, out.height, 16);
+    ctx.fill();
+    ctx.drawImage(canvas, padding, padding);
+    ctx.fillStyle = '#111111';
+    ctx.font = 'bold 16px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(clubName, out.width / 2, size + padding * 2 + 18);
+    ctx.fillStyle = '#888888';
+    ctx.font = '12px "DM Mono", monospace';
+    ctx.fillText('Scan to share your experience', out.width / 2, size + padding * 2 + 38);
+
+    const a = document.createElement('a');
+    a.download = `qr-${clubId}.png`;
+    a.href = out.toDataURL('image/png');
+    a.click();
+  }
+</script>
+</body>
+</html>

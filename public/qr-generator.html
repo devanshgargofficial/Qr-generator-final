@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Club QR Generator</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg:      #090b11;
+      --surface: #111520;
+      --card:    #161c2d;
+      --border:  #242d46;
+      --accent:  #c9a84c;
+      --text:    #e8e6f0;
+      --muted:   #6b7494;
+      --green:   #3ecf8e;
+      --red:     #e05a5a;
+      --radius:  12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(201,168,76,0.08) 0%, transparent 60%);
+    }
+
+    .page { width: 100%; max-width: 480px; }
+
+    .eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 36px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      padding: 12px 16px;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7494' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 20px;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+
+    select option { background: var(--card); }
+
+    .btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #a8762a);
+      color: #000;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.2s;
+      box-shadow: 0 4px 24px rgba(201,168,76,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 32px rgba(201,168,76,0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,0.25);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── QR result ── */
+    .result {
+      display: none;
+      margin-top: 28px;
+      text-align: center;
+    }
+
+    .result.visible { display: block; }
+
+    .result-club {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.06em;
+    }
+
+    .qr-wrap {
+      display: inline-block;
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .qr-wrap img {
+      display: block;
+      width: 240px;
+      height: 240px;
+    }
+
+    .payload-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: left;
+      margin-bottom: 18px;
+      line-height: 1.7;
+      word-break: break-all;
+    }
+
+    .payload-box .key   { color: var(--accent); }
+    .payload-box .val   { color: var(--text); }
+
+    .btn-download {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 11px 20px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-download:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Error ── */
+    .error-msg {
+      display: none;
+      margin-top: 14px;
+      background: rgba(224,90,90,0.08);
+      border: 1px solid rgba(224,90,90,0.3);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--red);
+      text-align: center;
+    }
+
+    .error-msg.visible { display: block; }
+
+    /* ── Nav link ── */
+    .nav-link {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .nav-link a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <div class="eyebrow">QR Management</div>
+  <h1>🎶 Club QR Generator</h1>
+  <p class="subtitle">Select a club and generate a scannable QR code</p>
+
+  <div class="card">
+    <label for="clubSelect">Select Club</label>
+    <select id="clubSelect">
+      <option value="">Loading clubs…</option>
+    </select>
+
+    <button class="btn" id="generateBtn" disabled>
+      Generate QR Code
+    </button>
+
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="result-club" id="resultLabel"></div>
+    <div class="qr-wrap">
+      <img id="qrImage" src="" alt="QR Code" />
+    </div>
+    <div class="payload-box" id="payloadBox"></div>
+    <button class="btn-download" id="downloadBtn">⬇ Download PNG</button>
+  </div>
+
+  <div class="nav-link">
+    <a href="/">← Back to full generator</a>
+  </div>
+</div>
+
+<script>
+  const clubSelect  = document.getElementById('clubSelect');
+  const generateBtn = document.getElementById('generateBtn');
+  const result      = document.getElementById('result');
+  const resultLabel = document.getElementById('resultLabel');
+  const qrImage     = document.getElementById('qrImage');
+  const payloadBox  = document.getElementById('payloadBox');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const errorMsg    = document.getElementById('errorMsg');
+
+  // ── Load clubs ──────────────────────────────────────────────────────────────
+  (async function loadClubs() {
+    try {
+      const res  = await fetch('/api/clubs');
+      const data = await res.json();
+
+      if (!data.success || !data.clubs.length) {
+        clubSelect.innerHTML = '<option value="">No clubs found</option>';
+        return;
+      }
+
+      clubSelect.innerHTML = '<option value="">Select a club…</option>' +
+        data.clubs.map(c =>
+          `<option value="${c.clubId}">${c.clubName}</option>`
+        ).join('');
+    } catch {
+      clubSelect.innerHTML = '<option value="">Failed to load clubs</option>';
+      showError('Could not reach the server. Is it running?');
+    }
+  })();
+
+  // ── Enable button on selection ──────────────────────────────────────────────
+  clubSelect.addEventListener('change', () => {
+    generateBtn.disabled = !clubSelect.value;
+    result.classList.remove('visible');
+    hideError();
+  });
+
+  // ── Generate ────────────────────────────────────────────────────────────────
+  generateBtn.addEventListener('click', async () => {
+    const clubId = clubSelect.value;
+    if (!clubId) return;
+
+    setLoading(true);
+    hideError();
+    result.classList.remove('visible');
+
+    try {
+      const res  = await fetch('/api/qr/generate', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ clubId }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        showError(data.error || 'Generation failed.');
+        return;
+      }
+
+      renderResult(data);
+    } catch {
+      showError('Could not reach the server.');
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  // ── Render result ────────────────────────────────────────────────────────────
+  function renderResult({ qrImage: src, payload }) {
+    resultLabel.textContent = `${payload.clubName}  ·  ${payload.clubId}`;
+    qrImage.src = src;
+
+    payloadBox.innerHTML =
+      `<span class="key">"clubId"</span>:    <span class="val">"${payload.clubId}"</span>\n` +
+      `<span class="key">"clubName"</span>:  <span class="val">"${payload.clubName}"</span>\n` +
+      `<span class="key">"targetUrl"</span>: <span class="val">"${payload.targetUrl}"</span>`;
+
+    downloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href     = src;
+      a.download = `qr-${payload.clubId}.png`;
+      a.click();
+    };
+
+    result.classList.add('visible');
+    result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function setLoading(on) {
+    generateBtn.disabled = on;
+    generateBtn.innerHTML = on
+      ? '<span class="spinner"></span> Generating…'
+      : 'Generate QR Code';
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('visible');
+  }
+
+  function hideError() {
+    errorMsg.classList.remove('visible');
+  }
+</script>
+</body>
+</html>
